@@ -1,0 +1,36 @@
+-- CLASE 23 de AGOSTO 
+CREATE OR REPLACE PACKAGE PKG_EMPLEADOS IS
+   FUNCTION f_obtener_depto(iddepto in number) return varchar2; 
+   PROCEDURE p_obtener_pais(idempl in employees.employee_id%type,
+                            v_pais out countries.country_name%type);
+END;
+ 
+ 
+CREATE OR REPLACE PACKAGE BODY PKG_EMPLEADOS IS
+ 
+    FUNCTION f_obtener_depto(iddepto in number) 
+      return varchar2 is
+      v_nomdepto  departments.department_name%type;
+    begin
+        select dep.department_name
+          into v_nomdepto
+          from departments dep
+         where dep.department_id = iddepto;
+        return v_nomdepto;
+    end f_obtener_depto;
+    PROCEDURE p_obtener_pais(idempl in employees.employee_id%type,
+                            v_pais out countries.country_name%type)
+      is
+    begin
+        select cou.country_name
+          into v_pais
+          from employees emp, departments dep, locations loc, countries cou
+         where emp.department_id = dep.department_id
+           and dep.location_id = loc.location_id
+           and loc.country_id = cou.country_id
+           and emp.employee_id = idempl;
+    end p_obtener_pais;
+ 
+END;
+      
+      

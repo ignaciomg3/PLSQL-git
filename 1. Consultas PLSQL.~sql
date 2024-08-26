@@ -1,0 +1,302 @@
+﻿DECLARE
+ v_numero number (5);
+v_letras varchar (20);
+v_fecha date;
+
+begin
+v_numero := 10000;
+v_letras  := 'Curso PLSQL';
+v_fecha := sysdate;
+
+dbms_output.put_line (v_numero);
+dbms_output.put_line (v_letras);
+dbms_output.put_line(v_fecha);
+end;
+
+-- Declara las variables num1, num2, resultado.
+-- Hacé un programa que muestre el resultado de las operaciones básicas.
+-- suma, resta, división, multiplicación.
+
+DECLARE
+ v_num1 number (2);
+  v_num2 number (2);
+ v_resultado number (4);
+ 
+ BEGIN
+    
+  v_num1 := 4;
+  v_num2 := 5;
+  
+ -- Suma
+  v_resultado := v_num1 + v_num2;
+  DBMS_OUTPUT.PUT_LINE('Suma: ' || v_resultado);
+  
+  -- Resta
+  v_resultado := v_num1 - v_num2;
+  DBMS_OUTPUT.PUT_LINE('Resta: ' || v_resultado);
+  
+  -- Multiplicación
+  v_resultado := v_num1 * v_num2;
+  DBMS_OUTPUT.PUT_LINE('Multiplicación: ' || v_resultado);
+  
+  -- División
+  IF v_num2 != 0 THEN
+    v_resultado := v_num1 / v_num2;
+    DBMS_OUTPUT.PUT_LINE('División: ' || v_resultado);
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('División: No se puede dividir por cero');
+  END IF;
+END;
+
+   
+
+--EJERCICIO: Relizar un programa que permita el ingreso de 2 numeros,
+--  y que realice las siguientes validaciones y calculos.
+--Si el numerol es mayor al numero 2 que sume ambas variables
+--Si el numero2 es mayor al numero 1 que reste ambias variables
+
+DECLARE
+  v_num1 NUMBER;
+  v_num2 NUMBER;
+  v_resultado NUMBER;
+  
+BEGIN
+  -- Solicitar ingreso de números
+  DBMS_OUTPUT.PUT_LINE('Ingrese el primer número:');
+  v_num1 := &v_num1;
+
+  DBMS_OUTPUT.PUT_LINE('Ingrese el segundo número:');
+  v_num2 := &v_num2;
+
+  -- Validaciones y cálculos
+  IF v_num1 > v_num2 THEN
+    v_resultado := v_num1 + v_num2;
+    --Sumamos
+    DBMS_OUTPUT.PUT_LINE('El primer número es mayor al segundo. La suma es: ' || v_resultado);
+  
+  ELSIF v_num2 > v_num1 THEN
+     --Restamos
+    v_resultado := v_num2 - v_num1;
+    DBMS_OUTPUT.PUT_LINE('El segundo número es mayor al primero. La resta es: ' || v_resultado);
+  
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('Los números son iguales.');
+  END IF;
+END;
+
+
+DECLARE
+   v_numerol := &Ingrese_Numerol;
+   v_numero2 := &Ingrese_Numero2;
+   v_operacion := upper('&Operacion');
+
+   if v_operacion 'SUMA' then 
+      v_resu: v_numerol + v_numero2;
+   =
+   elsif v_operacion = 'RESTA' then 
+      v resu: v numerol v_numero2;
+   elsif v_operacion
+   =
+   'MULTI' thền
+   v_resu:= v_numerol * v_numero2;
+   elsif v_operacion 'DIVI' then =
+   v_resu:= v_numerol / v_numero2;
+   else
+   dbms_output.put_line('La operacion no es valida'); end if;
+   if v_resu <> 0 then
+
+
+– que permita ingresar el nombre de un país por pantalla y que valide si el país ingresado 
+es de sur américa o del resto del mundo.
+
+DECLARE
+  TYPE paises_tabla IS TABLE OF VARCHAR2(100);
+  --Hacemos un arreglo de paises de Sudamerica
+  v_paises paises_tabla := paises_tabla(
+    'ARGENTINA', 'BOLIVIA', 'BRASIL', 'CHILE', 
+    'COLOMBIA', 'ECUADOR', 'GUYANA', 'PARAGUAY', 
+    'PERU', 'SURINAM', 'URUGUAY', 'VENEZUELA'
+  );
+  v_pais VARCHAR2(100);
+  v_input_pais VARCHAR2(100);
+  v_encontrado BOOLEAN := FALSE;
+BEGIN
+  -- Solicitar ingreso del nombre del país
+  DBMS_OUTPUT.PUT_LINE('Ingrese el nombre del país:');
+  v_input_pais := UPPER('&v_input_pais');
+
+  -- Recorrer el arreglo de países
+  FOR i IN 1..v_paises.COUNT LOOP
+    IF v_paises(i) = v_input_pais THEN
+      v_encontrado := TRUE;
+      EXIT;
+    END IF;
+  END LOOP;
+
+  -- Mostrar el resultado
+  IF v_encontrado THEN
+    DBMS_OUTPUT.PUT_LINE('El país '|| v_input_pais || ' es de Sur América');
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('El país es del resto del mundo');
+  END IF;
+END;
+
+
+-- CLASE 2 
+
+-- Cursor Implícito
+
+DECLARE
+   v_nombre VARCHAR(20); 
+   v_apellido VARCHAR(15);
+     
+
+BEGIN
+  
+   SELECT e.first_name, e.last_name
+   INTO v_nombre, v_apellido
+   FROM employees e
+   WHERE e.employee_id = 100;
+   
+   dbms_output.put_line('nombre: ' ||v_nombre || ', apellido: '|| v_apellido );
+   
+END;
+
+-- CURSORES EXPLICITOS (CLASE Lunes 5 de AGOSTO)
+
+/*Obtener una salida similar a esta: 
+Region: 
+          -País de la región
+                -Departamento1
+                -Departamento2
+                -Departamento3
+           -País de la región
+                -Departamento1
+                -Departamento2
+                -Departamento3
+                
+*/
+DECLARE
+
+--creamos un cursor de regiones.
+  CURSOR c_regiones IS
+    SELECT region_id, region_name FROM regions;
+    
+--creamos un cursor de países.
+--CURSOR cursor_name(parameter_name parameter_type) IS
+  CURSOR c_paises(p_region_id regions.region_id%TYPE) IS
+    SELECT country_id, country_name 
+    FROM countries 
+    WHERE region_id = p_region_id;
+    
+--creamos un cursor de Departamentos..
+  CURSOR c_departamentos(p_country_id countries.country_id%TYPE) IS
+    SELECT department_name 
+    FROM departments 
+    WHERE location_id IN (
+                                            SELECT location_id 
+                                            FROM locations 
+                                            WHERE country_id = p_country_id
+);
+
+--declaramos las variables con el mismo TYPE de las columnas.
+  v_region_id                                regions.region_id%TYPE;
+  v_region_name                          regions.region_name%TYPE;
+  v_country_id                               countries.country_id%TYPE;
+  v_country_name                        countries.country_name%TYPE;
+  v_department_name                 departments.department_name%TYPE;
+
+
+BEGIN
+   --recorremos las regiones del cursor_regiones
+  FOR r IN c_regiones LOOP
+    DBMS_OUTPUT.PUT_LINE('Región: ' || r.region_name);
+    --recorremos los países del cursor país.
+    FOR p IN c_paises(r.region_id) LOOP
+       
+      DBMS_OUTPUT.PUT_LINE('País: ' || p.country_name);
+      DBMS_OUTPUT.PUT_LINE('- ');
+      
+      --recorremos los departamentos del cursor Departamentos.
+      FOR d IN c_departamentos(p.country_id) LOOP
+        DBMS_OUTPUT.PUT_LINE(' Departamento: - ' || d.department_name);
+      END LOOP;
+    END LOOP;
+    DBMS_OUTPUT.PUT_LINE('');
+  END LOOP;
+  
+  
+Exception
+  when too_many_rows  then
+     dbms_output.put_line('Demasiadas filas');
+     when no_data_found then
+     dbms_output.put_line('cero filas');
+     when others  then
+     dbms_output.put_line('Algún error');
+END;
+
+-- Función que muestra los 
+--Departamentos
+-- País
+   -- Departamento y cantidad de empleados.
+DECLARE
+  
+  CURSOR c_regiones IS
+    SELECT region_id, region_name 
+    FROM regions;
+    
+  CURSOR c_paises(p_region_id regions.region_id%TYPE) IS
+    SELECT country_id, country_name 
+    FROM countries 
+    WHERE region_id = p_region_id;
+    
+  CURSOR c_departamentos(p_country_id countries.country_id%TYPE) IS
+    SELECT department_id, department_name 
+    FROM departments 
+    WHERE location_id IN (
+      SELECT location_id 
+      FROM locations 
+      WHERE country_id = p_country_id
+    );
+    
+  v_region_id regions.region_id%TYPE;
+  v_region_name regions.region_name%TYPE;
+  v_country_id countries.country_id%TYPE;
+  v_country_name countries.country_name%TYPE;
+  v_department_id departments.department_id%TYPE;
+  v_department_name departments.department_name%TYPE;
+  v_total_empleados_region NUMBER;
+  v_total_empleados_depto NUMBER;
+  
+BEGIN
+  FOR r IN c_regiones LOOP
+    DBMS_OUTPUT.PUT_LINE('Región: ' || r.region_name);
+    v_total_empleados_region := 0;
+    
+    -- recorremos los países y le pasamos el parámetro (r.region_id)
+    FOR p IN c_paises(r.region_id) LOOP
+      DBMS_OUTPUT.PUT_LINE('País: ' || p.country_name);
+      DBMS_OUTPUT.PUT_LINE('- Departamentos del País:');
+      
+      -- recorremos los depas y le pasamos el parámetro (p.country_id)
+      FOR d IN c_departamentos(p.country_id) LOOP
+        v_department_id := d.department_id;
+        v_department_name := d.department_name;
+        
+        -- Calcular el número de empleados en el departamento actual
+        SELECT COUNT(*) INTO v_total_empleados_depto
+        FROM employees
+        WHERE department_id = v_department_id;
+        
+        -- Sumar al total de empleados de la región
+        v_total_empleados_region := v_total_empleados_region + v_total_empleados_depto;
+        
+        DBMS_OUTPUT.PUT_LINE('  - ' || v_department_name || ' (Empleados: ' || v_total_empleados_depto || ')');
+      END LOOP;
+    END LOOP;
+    
+    DBMS_OUTPUT.PUT_LINE('Total de empleados en la región ' || r.region_name || ': ' || v_total_empleados_region);
+    DBMS_OUTPUT.PUT_LINE(''); -- Línea en blanco para separar regiones
+  END LOOP;
+END;
+

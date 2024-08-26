@@ -1,0 +1,398 @@
+-- CLASE 19 Agosto  ***********************************************************
+
+-- Secuencias
+
+SELECT *
+
+FROM employees
+delcare
+
+v_actual number(5);
+
+begin
+   
+SELECT max(emp.employee_id)INTO v_actual
+FROM employees emp;
+
+INSERT INTO VALUES (v_actual+1, 'x','x') ;
+ 
+END
+
+-- creamos la secuencia 
+CREATE sequence seq_employees
+--el arranque del primer ciclo empieza desde 207
+START WITH 207
+--incremento de +1
+INCREMENT BY 1 
+MAXVALUE 99999
+-- cuando arranque la próxima vuelta arranca desde el minValue
+MIN VALUE 207
+--le decimos que es un ciclo.
+CYCLE;
+
+
+--Hacemos un ejercicio con NEXTVALUE ***********************************************************
+
+DECLARE 
+
+v_idemple employees.employee_id%type;
+
+BEGIN
+          --traigo el valor siguiente de id empleado
+          SELECT seq_copia_emple.nextval
+          INTO v_idemple
+          FROM dual;   
+
+END;
+
+/*Ejercicio: --Hacer una programa que recorra los numeros del 1 al 100 y 
+obtenga un listado de los multiplos de 3 y llame a una funcion
+--que inserte los resulltados en una nueva tabla y que utilice 
+una secuencia para identificar univocamente cada registro.*/
+
+
+DROP SEQUENCE seq_multiplos_de_3;
+--PASO 1) Creo la Secuencia
+CREATE sequence seq_multiplos_de_3
+START WITH 0
+--incremento de +1
+INCREMENT BY 1
+MAXVALUE 100
+MINVALUE 0
+CYCLE;
+
+--PASO 2) Muestro la secuencia.
+DECLARE
+    v_multiplo NUMBER;
+BEGIN
+    -- Bucle para generar valores de la secuencia
+    FOR i IN 1..100 LOOP
+        v_multiplo := seq_multiplos_de_3.NEXTVAL;
+        DBMS_OUTPUT.PUT_LINE('Valor de la secuencia: ' || v_multiplo);
+    END LOOP;
+END;
+
+
+DROP TABLE tabla_multiplos_de_3;
+--creamos una tabla para insertar los numeros de la secuencia
+CREATE TABLE tabla_multiplos_de_3 (
+    id_multiplo NUMBER PRIMARY KEY ,
+    multiplo NUMBER
+);
+
+-- ******************************** FUNCION Insertar multiplo ********************************
+--Creamos una función para insertar los multiplos en la tabla.
+CREATE OR REPLACE FUNCTION insertar_mult_de_3  RETURN NUMBER IS
+--creamos las variables
+v_id number;
+v_multiplo number;
+
+BEGIN
+   
+           -- un loop para recorrer la secuencia.
+       FOR i IN 1..100 LOOP  -- Rango del ciclo FOR
+        IF MOD(i, 3) = 0 THEN
+           DBMS_OUTPUT.PUT_LINE(i || ' es múltiplo de 3');
+           -- Obtener el próximo valor de la secuencia
+           v_multiplo := seq_multiplos_de_3.NEXTVAL;
+           v_id = i;
+           -- Insertar el valor en la tabla
+        INSERT INTO tabla_multiplos_de_3 (id ,multiplo)
+        VALUES (v_id, v_multiplo);
+      ELSE
+           DBMS_OUTPUT.PUT_LINE(i || ' no es múltiplo de 3');
+    END IF;
+  END LOOP;
+    -- Obtener el próximo valor de la secuencia
+    v_multiplo := seq_multiplos_de_3.NEXTVAL;
+   
+    -- Terminar el bucle si se alcanza el valor máximo de la secuencia
+        EXIT WHEN v_multiplo > 100;  -- Aquí 100 es el valor máximo de la secuencia
+
+    --hacer insert
+    INSERT INTO  tabla_multiplos_de_3(multiplo)
+    VALUES(v_multiplo);
+    
+    END LOOP;
+    
+ RETURN v_multiplo;
+END;
+
+SELECT * 
+FROM tabla_multiplos_de_3
+
+
+/******************************************* FUNCION CHATGPT ************************************/
+   CREATE OR REPLACE FUNCTION insertar_mult_de_3 RETURN NUMBER IS
+    -- Variables
+    v_multiplo NUMBER;
+    v_id NUMBER;
+BEGIN
+    -- Bucle para insertar todos los valores de la secuencia en la tabla
+    FOR i IN 1..100 LOOP  -- Rango del ciclo FOR
+        IF MOD(i, 3) = 0 THEN
+           DBMS_OUTPUT.PUT_LINE(i || ' es múltiplo de 3');
+           -- Obtener el próximo valor de la secuencia
+           v_multiplo := seq_multiplos_de_3.NEXTVAL;
+           v_id = i;
+           -- Insertar el valor en la tabla
+        INSERT INTO tabla_multiplos_de_3 (id ,multiplo)
+        VALUES (v_id, v_multiplo);
+      ELSE
+           DBMS_OUTPUT.PUT_LINE(i || ' no es múltiplo de 3');
+    END IF;
+  END LOOP;
+       
+
+    RETURN v_multiplo;
+END;
+
+    
+    
+/*Hacer un programa que permita el cambio de puesto de trabajo de un empleado.
+Copia de tabla empleados
+Copia vacia de la tabla job_history, agregarle la columna idhist
+ 
+Validaciones:
+- Id de empleado exista
+- El job_id exista
+- El job_id no sea el actual*/
+
+
+CREATE TABLE copia_job_history
+AS SELECT job
+
+DROP TABLE employees_copy;
+-- Crear copia de la tabla employees
+CREATE TABLE employees_copy AS
+SELECT * FROM employees;
+
+-- Crear copia vacía de la tabla job_history con la columna idhist
+CREATE TABLE job_history_copy AS
+SELECT job_history.*, NULL AS idhist
+FROM job_history
+WHERE 1 = 0;  -- Copia la estructura pero no los datos
+
+DECLARE
+    v_employee_id employees_copy.employee_id%TYPE;
+    v_new_job_id employees_copy.job_id%TYPE;
+    v_current_job_id employees_copy.job_id%TYPE;
+    v_start_date DATE := SYSDATE;
+    v_idhist NUMBER;
+BEGIN
+    -- Solicitar el ID del empleado
+    v_employee_id := &employee_id;
+    
+    -- Validar que el empleado exista
+    SELECT COUNT(*)
+    INTO v_idhist
+    FROM employees_copy
+    WHERE employee_id = v_employee_id;
+    
+    IF v_idhist = 0 THEN
+        DBMS_OUTPUT.PUT_LINE('Empleado no existe');
+        RETURN;
+    END IF;
+
+    -- Solicitar el nuevo ID del trabajo
+    v_new_job_id := '&new_job_id';
+    
+    -- Validar que el job_id exista
+    SELECT COUNT(*)
+    INTO v_idhist
+    FROM jobs
+    WHERE job_id = v_new_job_id;
+    
+    IF v_idhist = 0 THEN
+        DBMS_OUTPUT.PUT_LINE('El puesto de trabajo no existe');
+        RETURN;
+    END IF;
+
+    -- Obtener el puesto de trabajo actual del empleado
+    SELECT job_id
+    INTO v_current_job_id
+    FROM employees_copy
+    WHERE employee_id = v_employee_id;
+
+    -- Validar que el nuevo job_id no sea el actual
+    IF v_current_job_id = v_new_job_id THEN
+        DBMS_OUTPUT.PUT_LINE('El empleado ya tiene este puesto de trabajo');
+        RETURN;
+    END IF;
+
+    -- Insertar el histórico del trabajo
+    SELECT NVL(MAX(idhist), 0) + 1
+    INTO v_idhist
+    FROM job_history_copy;
+
+    INSERT INTO job_history_copy (idhist, employee_id, start_date, job_id)
+    VALUES (v_idhist, v_employee_id, v_start_date, v_current_job_id);
+
+    -- Actualizar el nuevo puesto de trabajo en la tabla employees
+    UPDATE employees_copy
+    SET job_id = v_new_job_id
+    WHERE employee_id = v_employee_id;
+
+    DBMS_OUTPUT.PUT_LINE('Cambio de trabajo realizado con éxito');
+    
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('Error: Datos no encontrados');
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error inesperado: ' || SQLERRM);
+END;
+/
+
+
+--************************************ CLASE 21 de AGOSTO ****************************************
+
+/*
+-Hacer un programa que permita realizar un ABM de clientes.
+Tabla:
+Clientes
+ 
+Campos:
+Id Cliente
+Nombre
+Apellido
+Domicilio
+DNI
+Telefono
+Email
+ 
+Validaciones:
+- El id debe ser autonumerico e ir de dos en dos
+- Todos los datos deben grabarse ne la base en mayusculas
+- Para el alta validar si el cliente ya existe
+- Validar que el email tenga @ */
+
+DROP TABLE clientes;
+CREATE TABLE clientes (
+    id_cliente NUMBER GENERATED BY DEFAULT AS IDENTITY (START WITH 1 INCREMENT BY 2) PRIMARY KEY,
+    nombre VARCHAR2(50),
+    apellido VARCHAR2(50),
+    domicilio VARCHAR2(100),
+    dni VARCHAR2(20),
+    telefono VARCHAR2(20),
+    email VARCHAR2(100)
+);
+
+SELECT * FROM clientes;
+DECLARE
+    v_opcion CHAR(1); -- Opción elegida por el usuario (A: alta, B: baja, M: modificación, C: consulta)
+    v_id_cliente NUMBER;
+    v_nombre VARCHAR2(50);
+    v_apellido VARCHAR2(50);
+    v_domicilio VARCHAR2(100);
+    v_dni VARCHAR2(20);
+    v_telefono VARCHAR2(20);
+    v_email VARCHAR2(100);
+
+BEGIN
+    -- Mostrar opciones al usuario
+    DBMS_OUTPUT.PUT_LINE('Seleccione una opción:');
+    DBMS_OUTPUT.PUT_LINE('A - Alta');
+    DBMS_OUTPUT.PUT_LINE('B - Baja');
+    DBMS_OUTPUT.PUT_LINE('M - Modificación');
+    DBMS_OUTPUT.PUT_LINE('C - Consulta');
+
+    -- Leer opción del usuario
+    v_opcion := UPPER('&opcion'); -- Pedir la opción al usuario
+    
+    IF v_opcion = 'A' THEN
+        -- Alta de cliente
+        v_nombre :=   UPPER( '&nombre');
+        v_apellido := UPPER( '&apellido');
+        v_domicilio := UPPER( '&domicilio');
+        v_dni := UPPER( '&dni');
+        v_telefono := UPPER( '&telefono');
+        v_email := UPPER( '&email');
+        
+        IF INSTR(v_email, '@') > 0 THEN
+         -- La cadena contiene una "@".
+          DBMS_OUTPUT.PUT_LINE('El email es válido.');
+          INSERT INTO clientes (nombre, apellido, domicilio, dni, telefono, email)
+        VALUES (v_nombre, v_apellido, v_domicilio, v_dni, v_telefono, v_email);
+        
+         DBMS_OUTPUT.PUT_LINE('Cliente dado de alta correctamente.');
+          ELSE
+          -- La cadena no contiene una "@".
+          DBMS_OUTPUT.PUT_LINE('El email no es válido.');
+           END IF;
+
+        
+        
+    ELSIF v_opcion = 'B' THEN
+        -- Baja de cliente
+        v_id_cliente := '&id_cliente';
+        
+        DELETE FROM clientes 
+        WHERE id_cliente = v_id_cliente;
+        
+        IF SQL%ROWCOUNT = 0 THEN
+            DBMS_OUTPUT.PUT_LINE('Cliente no encontrado.');
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('Cliente dado de baja correctamente.');
+        END IF;
+        
+    ELSIF v_opcion = 'M' THEN
+        -- Modificación de cliente
+        v_id_cliente := '&id_cliente';
+        
+        -- Verificar si el cliente existe
+        SELECT COUNT(*) 
+        INTO v_id_cliente 
+        FROM clientes 
+        WHERE id_cliente = v_id_cliente;
+        
+        IF v_id_cliente = 0 THEN
+            DBMS_OUTPUT.PUT_LINE('Cliente no encontrado.');
+        ELSE
+            v_nombre := '&nombre';
+            v_apellido := '&apellido';
+            v_domicilio := '&domicilio';
+            v_dni := '&dni';
+            v_telefono := '&telefono';
+            v_email := '&email';
+            
+            UPDATE clientes
+            SET nombre = v_nombre,
+                apellido = v_apellido,
+                domicilio = v_domicilio,
+                dni = v_dni,
+                telefono = v_telefono,
+                email = v_email
+            WHERE id_cliente = v_id_cliente;
+            
+            DBMS_OUTPUT.PUT_LINE('Cliente modificado correctamente.');
+        END IF;
+        
+    ELSIF v_opcion = 'C' THEN
+        -- Consulta de cliente
+        v_id_cliente := '&id_cliente';
+        
+        BEGIN
+            SELECT nombre, apellido, domicilio, dni, telefono, email
+            INTO v_nombre, v_apellido, v_domicilio, v_dni, v_telefono, v_email
+            FROM clientes
+            WHERE id_cliente = v_id_cliente;
+            
+            DBMS_OUTPUT.PUT_LINE('Cliente encontrado:');
+            DBMS_OUTPUT.PUT_LINE('Nombre: '   || v_nombre);
+            DBMS_OUTPUT.PUT_LINE('Apellido: '   || v_apellido);
+            DBMS_OUTPUT.PUT_LINE('Domicilio: ' || v_domicilio);
+            DBMS_OUTPUT.PUT_LINE('DNI: '          || v_dni);
+            DBMS_OUTPUT.PUT_LINE('Teléfono: '  || v_telefono);
+            DBMS_OUTPUT.PUT_LINE('Email: '       || v_email);
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                DBMS_OUTPUT.PUT_LINE('Cliente no encontrado.');
+        END;
+        
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Opción no válida.');
+    END IF;
+
+END;
+/
+

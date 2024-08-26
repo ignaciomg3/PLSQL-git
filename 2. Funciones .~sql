@@ -1,0 +1,241 @@
+--FUNCIONES 
+
+
+--declaro una función que sume 2 numeros.
+
+create or replace function f_suma(numero1 in number,
+                                                        numero2 in number)
+                                                        
+return number
+is
+v_resultado number;
+
+begin
+   v_resultado := numero1 + numero2;
+   
+   return v_resultado;
+   
+end;
+
+--LLAMAMOS a la función
+declare 
+           v_calculo number;
+           
+begin 
+           v_calculo := f_suma(4,4);
+           
+END;
+
+
+/*Hacer un proceso que permita el ingreso por pantalla del nombre de un departamento, 
+recorra todos los empleados de dicho departamento que llame a una  función que retorne si tiene o no personal a cargo, si lo tiene otorgarle un
+aumento de 15% otorgar   y sino tienen otorgar  un aumento del 30%*/
+
+create table aumento as
+select emp.employee_id, emp.first_name, emp.last_name, emp.salary as Salario_Vigente, emp.salary as Porcentaje, 
+       emp.salary as Nuevo_Salario, dep.department_name
+  from employees emp, departments dep
+where emp.department_id = dep.department_id
+   and 1 = 2;
+   
+
+
+
+--Funcion para saber si tiene personal a cargo.    (retorna la cantidad de empleados a cargo)
+   CREATE OR REPLACE FUNCTION tiene_personal_a_cargo(emp_id NUMBER) RETURN BOOLEAN IS
+    cantidad_subordinados NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO cantidad_subordinados
+    FROM employees
+    WHERE manager_id = emp_id;
+    
+    RETURN cantidad_subordinados > 0;
+END;
+
+-- Procedimiento: Otorgar Aumento
+CREATE OR REPLACE PROCEDURE otorgar_aumento IS
+    v_department_name departments.department_name%TYPE;
+    v_employee_id employees.employee_id%TYPE;
+    v_first_name employees.first_name%TYPE;
+    v_last_name employees.last_name%TYPE;
+    v_salary employees.salary%TYPE;
+    v_nuevo_salario employees.salary%TYPE;
+    v_porcentaje NUMBER;
+
+    CURSOR c_empleados IS
+        SELECT emp.employee_id, emp.first_name, emp.last_name, emp.salary
+        FROM employees emp, departments dep
+        WHERE emp.department_id = dep.department_id
+        AND dep.department_name = v_department_name;
+        
+BEGIN
+    -- Solicitar el nombre del departamento al usuario
+    v_department_name := '&Ingrese_el_nombre_del_departamento';
+
+    -- Recorrer los empleados del departamento especificado
+    FOR emp IN c_empleados LOOP
+       --Pregunto si el empleado tiene personal a cargo.
+        IF tiene_personal_a_cargo(emp.employee_id) THEN
+            v_porcentaje := 0.15;
+        ELSE
+            v_porcentaje := 0.30;
+        END IF;
+
+        v_nuevo_salario := emp.salary * (1 + v_porcentaje);
+
+        -- Insertar en la tabla 'aumento' el nuevo salario 
+        INSERT INTO aumento (employee_id, first_name, last_name, Salario_Vigente, Porcentaje, Nuevo_Salario, department_name)
+        VALUES (emp.employee_id, emp.first_name, emp.last_name, emp.salary, v_porcentaje * 100, v_nuevo_salario, v_department_name);
+
+        DBMS_OUTPUT.PUT_LINE('Empleado ' || emp.first_name || ' ' || emp.last_name || ' ha recibido un aumento. Nuevo Salario: ' || v_nuevo_salario);
+    END LOOP;
+    
+    COMMIT;
+END;
+
+--Ejecutamos el Procedimiento
+BEGIN
+    otorgar_aumento;
+END;
+
+SELECT *
+FROM departments
+
+
+SELECT *
+FROM aumento
+
+
+
+-- Mismo ejercicio hecho por Christian
+--Hacer una proceso que permita el ingreso por pantalla del nombre de un departamento, recorra todos empleados de dicho depto y
+--que llame a una funcion que retorne si tiene o no personal a cargo, si lo tiene otorgarle un aumento del 15%, si no lo tiene 
+--otorgar un aumento del 30%.
+ 
+declare
+ 
+  v_depto      departments.department_name%type;
+  v_iddep      departments.department_id%type;
+  v_cuento_emp number(5):=0;
+  v_acargo     number(5):=0;
+  v_poraum     number(5,2):=0;
+  v_retsal     number(1);
+  v_sueldo     employees.salary%type;
+  cursor c_emple(v_depid departments.department_id%type) is
+  select emp1.employee_id ide, emp1.first_name nom, emp1.last_name ape, emp1.salary sal
+    from employees emp1
+   where emp1.department_id = v_depid;
+ 
+begin
+  v_depto := '&Ingrese_Nombre_Depto';
+  v_depto := upper(v_depto);
+  v_iddep:=null;
+  begin
+      select dep.department_id
+        into v_iddep
+        from departments dep
+       where dep.department_name = v_depto;
+
+      begin
+          select count(*)
+            into v_cuento_emp
+            from employees emp
+           where emp.department_id = v_iddep;
+          if v_cuento_emp > 0 then
+            for i in c_emple(v_iddep) loop
+               v_acargo:=f_tiene_a_cargo(i.ide);
+               if v_acargo > 0 then
+                 v_poraum:=1.15;
+               else
+                 v_poraum:=1.30;
+               end if;
+               v_retsal:=f_aumento_sueldo(i.ide,v_poraum,v_sueldo);
+               if v_retsal = 1 then
+                  insert into aumento values (i.ide,i.nom,i.ape,i.sal,v_poraum,v_sueldo,v_depto);
+               else
+                  dbms_output.put_line('No se pudo calcular el aumento de salario para el empleado: '||i.nom||' '||i.ape);
+               end if;
+            end loop;
+          else
+            dbms_output.put_line('El departamento '||v_depto||' no tiene empleados');
+          end if;
+      end;
+ 
+  exception
+    when no_data_found then
+       dbms_output.put_line('Departamento Inexistente');
+  end;
+  commit;
+  dbms_output.put_line('El proceso terminó correctamente');
+exception
+  when others then
+    dbms_output.put_line('Error: '||sqlerrm);
+    rollback;
+end;
+ 
+ 
+ 
+/*create table aumento as
+select emp.employee_id, emp.first_name, emp.last_name, emp.salary as Salario_Vigente, emp.salary as Porcentaje, 
+       emp.salary as Nuevo_Salario, dep.department_name
+  from employees emp, departments dep
+where emp.department_id = dep.department_id
+   and 1 = 2;*/
+ 
+/*create or replace function f_tiene_a_cargo (idemp  in employees.employee_id%type)
+return number
+is
+ 
+v_tiene number(5):=0;
+ 
+begin
+  select count(*)
+    into v_tiene
+    from employees emp
+   where emp.manager_id = idemp;
+  return v_tiene;
+end;*/
+ 
+select f_tiene_a_cargo(105) from dual
+ 
+/*select *
+    from employees emp
+   where emp.department_id = 60
+   emp.manager_id = idemp;
+ 
+select *
+  from departments dep
+where dep.department_name = 'IT'*/
+ 
+ 
+/*create or replace function f_aumento_sueldo(idemp          in employees.employee_id%type,
+                                            porce          in number,
+                                            v_sueldo_nuevo out employees.salary%type)
+ 
+return number
+is
+ 
+begin
+   select emp.salary * porce
+     into v_sueldo_nuevo
+     from employees emp
+    where emp.employee_id = idemp;
+    return 1;
+exception
+    when others then
+      return 0;
+end;*/
+ 
+ 
+select *
+  from aumento;
+select f_aumento_sueldo(103,1.40) from dual;
+
+
+
+
+           
+
+
+
